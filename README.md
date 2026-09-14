@@ -1,8 +1,13 @@
 # Fisheye Object Detection
 
-Projeto de pesquisa para **detecção de objetos em imagens fisheye**, utilizando o dataset **WoodScape** e modelos de detecção em tempo real, com foco inicial no **RT-DETR** e posterior comparação com arquiteturas da família **YOLO**.
+Projeto de pesquisa para **detecção de objetos em imagens fisheye**, utilizando o dataset **WoodScape** e modelos de detecção em tempo real.
 
-O objetivo é construir um pipeline reprodutível para preparação dos dados, treinamento, validação e comparação de modelos em imagens obtidas por câmeras fisheye.
+Nesta etapa da pesquisa foram avaliadas duas arquiteturas:
+
+* **RT-DETR-L**
+* **YOLO11m**
+
+O objetivo é construir um pipeline reprodutível para preparação dos dados, treinamento, validação, teste e comparação de modelos em imagens obtidas por câmeras fisheye, considerando tanto a qualidade da detecção quanto o custo computacional.
 
 ---
 
@@ -10,26 +15,27 @@ O objetivo é construir um pipeline reprodutível para preparação dos dados, t
 
 Este projeto busca:
 
-- preparar o dataset WoodScape para detecção de objetos;
-- converter as anotações originais para o formato utilizado pela Ultralytics;
-- manter divisões fixas de `train`, `val` e `test`;
-- treinar e avaliar o RT-DETR;
-- comparar RT-DETR com modelos YOLO utilizando os mesmos dados;
-- avaliar métricas de precisão e desempenho computacional;
-- investigar posteriormente execução em dispositivos de borda.
+* preparar o dataset WoodScape para detecção de objetos;
+* converter as anotações originais para o formato utilizado pela Ultralytics;
+* manter divisões fixas de `train`, `val` e `test`;
+* treinar e avaliar diferentes arquiteturas de detecção;
+* comparar RT-DETR e YOLO utilizando os mesmos dados;
+* avaliar desempenho por classe;
+* analisar custo computacional e velocidade de inferência;
+* investigar posteriormente execução em dispositivos de borda.
 
 As principais métricas de interesse são:
 
-- Precision;
-- Recall;
-- mAP@50;
-- mAP@50:95;
-- número de parâmetros;
-- GFLOPs;
-- uso de VRAM;
-- latência;
-- FPS;
-- tamanho do modelo.
+* Precision;
+* Recall;
+* mAP@50;
+* mAP@50:95;
+* número de parâmetros;
+* GFLOPs;
+* uso de VRAM;
+* latência;
+* FPS;
+* tamanho do modelo.
 
 ---
 
@@ -39,22 +45,22 @@ O projeto utiliza o [WoodScape](https://github.com/valeoai/WoodScape), dataset d
 
 Para a tarefa de detecção são utilizadas cinco classes:
 
-| ID | Classe |
-|---:|---|
-| 0 | `vehicles` |
-| 1 | `person` |
-| 2 | `bicycle` |
-| 3 | `traffic_light` |
-| 4 | `traffic_sign` |
+| ID | Classe          |
+| -: | --------------- |
+|  0 | `vehicles`      |
+|  1 | `person`        |
+|  2 | `bicycle`       |
+|  3 | `traffic_light` |
+|  4 | `traffic_sign`  |
 
 O dataset preparado neste projeto contém:
 
-| Split | Imagens | Objetos |
-|---|---:|---:|
-| Train | 6.587 | 57.719 |
-| Validation | 823 | 7.118 |
-| Test | 824 | 7.226 |
-| **Total** | **8.234** | **72.063** |
+| Split      |   Imagens |    Objetos |
+| ---------- | --------: | ---------: |
+| Train      |     6.587 |     57.719 |
+| Validation |       823 |      7.118 |
+| Test       |       824 |      7.226 |
+| **Total**  | **8.234** | **72.063** |
 
 > Os dados do WoodScape não são versionados neste repositório. Faça o download diretamente das fontes oficiais e respeite os termos de uso e a licença do dataset.
 
@@ -84,10 +90,15 @@ fisheye-object-detection/
 │   └── prepare_woodscape.py
 │
 ├── training/
-│   └── train_rtdetr.py
+│   ├── train_rtdetr.py
+│   └── train_yolo11.py
+│
+├── evaluation/
+│   └── evaluate_model.py
 │
 ├── docs/
-│   └── relatorio_woodscape_rtdetr_parcial.tex
+│   ├── rtdetr_l_woodscape_e3_b8_full.tex
+│   └── rtdetr_l_woodscape_e100_b8_summary.tex
 │
 ├── runs/
 ├── requirements.txt
@@ -95,7 +106,7 @@ fisheye-object-detection/
 └── README.md
 ```
 
-As pastas `datasets/`, `runs/` e arquivos de pesos não devem ser enviados para o GitHub.
+As pastas `datasets/`, `runs/` e os arquivos de pesos `.pt` não devem ser enviados para o GitHub.
 
 ---
 
@@ -174,9 +185,9 @@ datasets/woodscape_raw/
 Depois execute:
 
 ```bash
-cd scripts
-
-python3 prepare_woodscape.py     --raw ../datasets/woodscape_raw     --output ../datasets/woodscape
+python3 scripts/prepare_woodscape.py \
+    --raw datasets/woodscape_raw \
+    --output datasets/woodscape
 ```
 
 O script:
@@ -225,40 +236,13 @@ Exemplos:
 
 Durante a divisão do dataset, imagens associadas à mesma captura são agrupadas para reduzir o risco de vazamento de informação entre treinamento, validação e teste.
 
----
-
-## Treinamento com RT-DETR
-
-O treinamento atual utiliza o **RT-DETR-L** disponibilizado pela Ultralytics.
-
-Execute a partir da raiz do projeto:
-
-```bash
-python3 training/train_rtdetr.py
-```
-
-Configuração utilizada no primeiro teste:
-
-```text
-Modelo:        rtdetr-l.pt
-Epochs:        3
-Image size:    640
-Batch:         4
-Device:        CUDA:0
-Workers:       8
-Seed:          42
-Pretrained:    True
-Deterministic: False
-AMP:           True
-```
-
-O modelo pré-treinado é baixado automaticamente pela Ultralytics na primeira execução.
+A divisão foi mantida fixa durante os experimentos com RT-DETR-L e YOLO11m.
 
 ---
 
 ## Hardware utilizado
 
-O primeiro treinamento em GPU foi realizado com:
+Os experimentos foram executados com:
 
 ```text
 GPU: NVIDIA GeForce RTX 5070
@@ -271,49 +255,232 @@ Ultralytics: 8.4.147
 
 ---
 
-## Resultados preliminares
+# Treinamento
 
-Foi realizado inicialmente um **smoke test de 3 épocas** para validar todo o pipeline.
+## RT-DETR-L
 
-Resultados do melhor checkpoint no conjunto de validação:
+O primeiro baseline completo utiliza o **RT-DETR-L**, carregado a partir dos pesos pré-treinados:
 
-| Métrica | Valor |
-|---|---:|
-| Precision | 0.604 |
-| Recall | 0.552 |
-| mAP@50 | 0.564 |
-| mAP@50:95 | 0.347 |
-| Inferência | ~5.5 ms/imagem |
+```text
+rtdetr-l.pt
+```
 
-Resultados por classe:
+Execute:
 
-| Classe | Precision | Recall | mAP@50 | mAP@50:95 |
-|---|---:|---:|---:|---:|
-| vehicles | 0.674 | 0.762 | 0.765 | 0.559 |
-| person | 0.696 | 0.639 | 0.683 | 0.391 |
-| bicycle | 0.507 | 0.413 | 0.430 | 0.242 |
-| traffic_light | 0.651 | 0.384 | 0.425 | 0.222 |
-| traffic_sign | 0.491 | 0.561 | 0.518 | 0.324 |
+```bash
+python3 training/train_rtdetr.py
+```
 
-> **Importante:** esses valores não representam o desempenho final do modelo. O treinamento teve apenas 3 épocas e a configuração utilizava `warmup_epochs=3`. O objetivo desse experimento foi apenas validar o funcionamento do pipeline.
+Configuração principal:
+
+```text
+Epochs máximas: 100
+Image size:     640
+Batch:          8
+Optimizer:      AdamW
+Learning rate:  0.001
+Weight decay:   0.0005
+Warm-up:        3 épocas
+Patience:       20 épocas
+Device:         CUDA:0
+Workers:        8
+Seed:           42
+AMP:            True
+```
+
+O treinamento foi interrompido por `early stopping` na época 91, sendo a época 71 selecionada como melhor checkpoint.
 
 ---
 
-## Artefatos gerados pelo treinamento
+## YOLO11m
 
-Os resultados são armazenados em:
+O segundo baseline utiliza o **YOLO11m**, carregado a partir dos pesos:
 
 ```text
-runs/rtdetr/woodscape_test/
+yolo11m.pt
 ```
 
-Entre os principais arquivos gerados estão:
+Execute:
+
+```bash
+python3 training/train_yolo11.py
+```
+
+A configuração experimental foi mantida próxima à utilizada pelo RT-DETR-L:
+
+```text
+Epochs máximas: 100
+Image size:     640
+Batch:          8
+Optimizer:      AdamW
+Learning rate:  0.001
+Weight decay:   0.0005
+Warm-up:        3 épocas
+Patience:       20 épocas
+Device:         CUDA:0
+Workers:        8
+Seed:           42
+AMP:            True
+```
+
+Durante a época 27 ocorreu uma interrupção causada por `CUDA_ERROR_LAUNCH_TIMEOUT`.
+
+O treinamento foi retomado utilizando:
+
+```bash
+yolo train resume \
+    model=runs/yolo11/woodscape_yolo11m_e100_b8/weights/last.pt
+```
+
+A execução prosseguiu normalmente até o `early stopping` na época 91. Assim como no RT-DETR-L, a melhor época foi a 71.
+
+---
+
+# Avaliação
+
+A avaliação final dos modelos é realizada pelo script:
+
+```text
+evaluation/evaluate_model.py
+```
+
+O script utiliza explicitamente:
+
+```python
+split="test"
+```
+
+para avaliar os checkpoints selecionados nas 824 imagens reservadas para teste.
+
+## RT-DETR-L
+
+```bash
+python3 evaluation/evaluate_model.py \
+    --model-type rtdetr \
+    --weights runs/rtdetr/woodscape_test-2/weights/best.pt \
+    --name rtdetr_l_woodscape_test
+```
+
+## YOLO11m
+
+```bash
+python3 evaluation/evaluate_model.py \
+    --model-type yolo \
+    --weights runs/yolo11/woodscape_yolo11m_e100_b8/weights/best.pt \
+    --name yolo11m_woodscape_test
+```
+
+---
+
+# Resultados experimentais
+
+## Validação
+
+| Métrica    | RT-DETR-L |     YOLO11m |
+| ---------- | --------: | ----------: |
+| Precision  |     0.655 |   **0.672** |
+| Recall     | **0.593** |       0.580 |
+| mAP@50     |     0.618 |   **0.620** |
+| mAP@50:95  |     0.394 |   **0.408** |
+| Inferência |    5.8 ms |  **2.7 ms** |
+| Parâmetros |   31.99 M | **20.03 M** |
+| GFLOPs     |     105.4 |    **67.8** |
+| Modelo     |   66.2 MB | **40.5 MB** |
+
+Na validação, o YOLO11m apresentou mAP ligeiramente superior e menor custo computacional.
+
+---
+
+## Teste
+
+Os dois melhores checkpoints foram posteriormente avaliados no mesmo conjunto de teste, contendo:
+
+```text
+824 imagens
+7.226 instâncias
+```
+
+Resultados:
+
+| Métrica    |  RT-DETR-L |     YOLO11m |
+| ---------- | ---------: | ----------: |
+| Precision  | **0.6941** |      0.6800 |
+| Recall     | **0.5876** |      0.5604 |
+| mAP@50     | **0.6270** |      0.6163 |
+| mAP@50:95  | **0.4012** |      0.3976 |
+| Inferência |   10.01 ms | **4.70 ms** |
+| Parâmetros |    31.99 M | **20.03 M** |
+| GFLOPs     |      105.4 |    **67.8** |
+
+O RT-DETR-L apresentou desempenho global ligeiramente superior no conjunto de teste.
+
+O YOLO11m, entretanto, apresentou desempenho muito próximo com custo computacional consideravelmente menor.
+
+---
+
+## Resultados por classe no conjunto de teste
+
+### RT-DETR-L
+
+| Classe        | Precision | Recall | mAP@50 | mAP@50:95 |
+| ------------- | --------: | -----: | -----: | --------: |
+| vehicles      |     0.776 |  0.737 |  0.796 |     0.598 |
+| person        |     0.755 |  0.623 |  0.704 |     0.433 |
+| bicycle       |     0.649 |  0.466 |  0.504 |     0.317 |
+| traffic_light |     0.663 |  0.572 |  0.574 |     0.301 |
+| traffic_sign  |     0.627 |  0.539 |  0.556 |     0.358 |
+
+### YOLO11m
+
+| Classe        | Precision | Recall | mAP@50 | mAP@50:95 |
+| ------------- | --------: | -----: | -----: | --------: |
+| vehicles      |     0.773 |  0.744 |  0.804 |     0.612 |
+| person        |     0.782 |  0.634 |  0.710 |     0.441 |
+| bicycle       |     0.608 |  0.442 |  0.504 |     0.309 |
+| traffic_light |     0.612 |  0.453 |  0.522 |     0.288 |
+| traffic_sign  |     0.625 |  0.529 |  0.542 |     0.338 |
+
+O YOLO11m apresentou desempenho superior nas classes `vehicles` e `person` em mAP@50:95, enquanto o RT-DETR-L apresentou melhores resultados para `bicycle`, `traffic_light` e `traffic_sign`.
+
+---
+
+## Eficiência computacional
+
+A comparação mostra uma diferença relevante entre as arquiteturas:
+
+```text
+RT-DETR-L
+31.99 milhões de parâmetros
+105.4 GFLOPs
+~10.0 ms de inferência no teste
+
+YOLO11m
+20.03 milhões de parâmetros
+67.8 GFLOPs
+~4.7 ms de inferência no teste
+```
+
+O YOLO11m utiliza aproximadamente 37% menos parâmetros e apresenta custo computacional significativamente menor, mantendo desempenho de detecção próximo ao RT-DETR-L.
+
+Esses resultados tornam a família YOLO particularmente interessante para os próximos experimentos relacionados a execução em dispositivos de borda.
+
+---
+
+## Artefatos gerados
+
+Os treinamentos e avaliações geram, entre outros:
 
 ```text
 weights/best.pt
 weights/last.pt
-labels.jpg
 results.png
+labels.jpg
+confusion_matrix.png
+confusion_matrix_normalized.png
+PR_curve.png
+P_curve.png
+R_curve.png
+F1_curve.png
 ```
 
 Os arquivos `.pt` e o diretório `runs/` são ignorados pelo Git.
@@ -322,68 +489,75 @@ Os arquivos `.pt` e o diretório `runs/` são ignorados pelo Git.
 
 ## Observações sobre as anotações
 
-Durante o primeiro treinamento, a Ultralytics identificou duas labels duplicadas:
+Durante o treinamento, a Ultralytics identificou duas labels duplicadas:
 
 ```text
 train/.../03404_RV.png: 1 duplicate labels removed
 val/.../01866_MVL.png: 1 duplicate labels removed
 ```
 
-A correção do script de preparação para eliminar duplicatas antes do treinamento está prevista como uma das próximas melhorias.
+A biblioteca removeu automaticamente essas duplicações durante o carregamento.
+
+Como melhoria futura, o script de preparação poderá ser ajustado para eliminar labels duplicadas antes do treinamento.
 
 ---
 
 ## Próximas etapas
 
-- [ ] Remover labels duplicadas durante a preparação;
-- [ ] regerar o dataset preparado;
-- [ ] definir hiperparâmetros definitivos;
-- [ ] realizar treinamento completo do RT-DETR-L;
-- [ ] avaliar o melhor checkpoint;
-- [ ] preservar o conjunto de teste para avaliação final;
-- [ ] implementar treinamento com YOLO11;
-- [ ] comparar YOLO11 e RT-DETR utilizando os mesmos splits;
-- [ ] medir latência, FPS, parâmetros, GFLOPs e VRAM;
-- [ ] estudar exportação ONNX/TensorRT;
-- [ ] avaliar execução em hardware de borda.
-
----
-
-## Resultados experimentais
-
-Os resultados definitivos serão adicionados após a conclusão dos treinamentos completos.
-
-A comparação será realizada mantendo, sempre que possível:
-
-- o mesmo dataset;
-- os mesmos splits;
-- a mesma resolução de entrada;
-- o mesmo protocolo de avaliação;
-- as mesmas métricas.
-
-Isso permite uma comparação mais justa entre diferentes arquiteturas.
+* [x] preparar o dataset WoodScape;
+* [x] definir divisão fixa de `train`, `val` e `test`;
+* [x] realizar smoke test com RT-DETR-L;
+* [x] realizar treinamento completo do RT-DETR-L;
+* [x] realizar treinamento completo do YOLO11m;
+* [x] implementar avaliação padronizada;
+* [x] avaliar RT-DETR-L no conjunto de teste;
+* [x] avaliar YOLO11m no conjunto de teste;
+* [x] comparar RT-DETR-L e YOLO11m;
+* [ ] corrigir labels duplicadas durante a preparação;
+* [ ] analisar curvas Precision-Recall, F1 e matrizes de confusão;
+* [ ] analisar falsos positivos e falsos negativos;
+* [ ] avaliar desempenho em objetos pequenos;
+* [ ] treinar YOLO11s como alternativa mais leve;
+* [ ] realizar experimentos com data augmentation;
+* [ ] estudar diferentes resoluções de entrada;
+* [ ] medir FPS em condições controladas;
+* [ ] estudar exportação ONNX/TensorRT;
+* [ ] avaliar execução em hardware de borda.
 
 ---
 
 ## Documentação
 
-Um relatório técnico parcial das etapas já realizadas está disponível em:
+Os relatórios dos experimentos seguem o padrão:
 
 ```text
-docs/relatorio_woodscape_rtdetr_parcial.tex
+<modelo>_<dataset>_e<epochs>_b<batch>_<tipo>.tex
 ```
+
+Exemplos:
+
+```text
+rtdetr_l_woodscape_e100_b8_full.tex
+rtdetr_l_woodscape_e100_b8_summary.tex
+yolo11m_woodscape_e100_b8_full.tex
+```
+
+Um relatório comparativo consolidado entre os modelos será produzido após a análise completa dos resultados.
 
 ---
 
 ## Referências
 
-- WoodScape:  
+* WoodScape:
   https://github.com/valeoai/WoodScape
 
-- Ultralytics RT-DETR:  
+* Ultralytics RT-DETR:
   https://docs.ultralytics.com/models/rtdetr/
 
-- RT-DETR — *DETRs Beat YOLOs on Real-time Object Detection*:  
+* Ultralytics YOLO11:
+  https://docs.ultralytics.com/models/yolo11/
+
+* RT-DETR — *DETRs Beat YOLOs on Real-time Object Detection*:
   https://arxiv.org/abs/2304.08069
 
 ---
