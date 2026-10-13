@@ -89,6 +89,9 @@ fisheye-object-detection/
 ├── scripts/
 │   └── prepare_woodscape.py
 │
+├── classical_ml/
+│   └── extract_crops.py
+│
 ├── training/
 │   ├── train_rtdetr.py
 │   └── train_yolo11.py
@@ -168,6 +171,13 @@ Dependências principais:
 ultralytics
 Pillow
 PyYAML
+numpy
+scipy
+scikit-learn
+scikit-image
+pandas
+matplotlib
+joblib
 ```
 
 ---
@@ -524,6 +534,16 @@ Como melhoria futura, o script de preparação poderá ser ajustado para elimina
 * [ ] estudar exportação ONNX/TensorRT;
 * [ ] avaliar execução em hardware de borda.
 
+### Aprendizado de máquina clássico
+
+- [x] Implementar extração de recortes a partir das anotações do WoodScape.
+- [x] Validar visualmente uma amostra de 50 recortes da classe `person`.
+- [ ] Executar extração de características HOG.
+- [ ] Analisar redução dimensional com PCA.
+- [ ] Recuperar o particionamento original dos baselines.
+- [ ] Implementar One-Class SVM.
+- [ ] Avaliar o classificador em dados independentes.
+- [ ] Analisar custo computacional dos métodos clássicos.
 ---
 
 ## Documentação
@@ -544,6 +564,91 @@ yolo11m_woodscape_e100_b8_full.tex
 
 Um relatório comparativo consolidado entre os modelos será produzido após a análise completa dos resultados.
 
+---
+## Experimentos com aprendizado de máquina clássico
+
+Além dos modelos de deep learning RT-DETR-L e YOLO11m, o projeto investiga técnicas clássicas de aprendizado de máquina, com o objetivo de avaliar sua viabilidade, capacidade de representação e custo computacional em imagens fisheye.
+
+A investigação considera extração de características visuais, redução de dimensionalidade e aprendizado de uma única classe (*one-class learning*).
+
+### Experimento E5 — HOG, PCA e One-Class SVM
+
+O experimento E5 tem como objetivo investigar a representação de objetos de interesse utilizando características visuais extraídas de imagens fisheye.
+
+A metodologia proposta envolve:
+
+1. Extração de recortes a partir das bounding boxes originais do WoodScape.
+2. Extração de características utilizando Histogram of Oriented Gradients (HOG).
+3. Padronização das características com StandardScaler.
+4. Redução de dimensionalidade utilizando Principal Component Analysis (PCA).
+5. Treinamento e avaliação de One-Class SVM.
+
+Inicialmente, a classe `person` foi selecionada como objeto de interesse.
+
+#### E5.1 — Extração de recortes
+
+O script `classical_ml/extract_crops.py` utiliza as imagens RGB e as anotações 2D originais do WoodScape para gerar recortes individuais dos objetos anotados.
+
+Exemplo de execução:
+
+```bash
+python classical_ml/extract_crops.py \
+  --raw datasets/woodscape_raw \
+  --output datasets/woodscape_crops_test \
+  --class-name person \
+  --max-crops 50
+```
+
+**Resultado preliminar — 13/10/2026:**
+
+| Indicador | Resultado |
+|---|---:|
+| Classe | `person` |
+| Recortes gerados | 50 |
+| Anotações inválidas | 0 |
+| Anotações sem imagem correspondente | 0 |
+| Verificação visual | Concluída com sucesso |
+
+O script também gera um manifesto CSV contendo os identificadores das imagens e das capturas originais, as classes e as coordenadas das bounding boxes.
+
+Os recortes e arquivos de dados gerados não são versionados no repositório.
+
+#### E5.2 — Extração HOG e redução dimensional com PCA
+
+A próxima etapa consiste na extração de características HOG e na investigação da variância explicada pelas componentes principais obtidas via PCA.
+
+A implementação inicial utiliza:
+
+`classical_ml/hog_pca.py`
+
+Exemplo de execução:
+
+```bash
+python classical_ml/hog_pca.py \
+  --crops datasets/woodscape_crops_test \
+  --class-name person \
+  --components 10
+```
+
+**Status:** implementação e avaliação pendentes.
+
+#### E5.3 — One-Class SVM
+
+O classificador One-Class SVM será treinado para modelar características da classe `person`, utilizando exemplos de outras classes na avaliação.
+
+**Status:** implementação e avaliação pendentes.
+
+### Considerações metodológicas
+
+Os testes iniciais utilizam uma amostra exploratória sem particionamento definitivo.
+
+Antes da avaliação experimental, será necessário recuperar a divisão original de treinamento, validação e teste utilizada nos baselines de deep learning.
+
+O ajuste dos transformadores e modelos será realizado exclusivamente com os dados de treinamento.
+
+Os experimentos clássicos inicialmente trabalham com recortes de objetos previamente localizados. Portanto, não representam um sistema completo de detecção e não serão comparados diretamente com os detectores YOLO11m e RT-DETR-L em termos de mAP ou latência de detecção.
+
+O objetivo inicial é investigar a capacidade de representação e classificação, o custo computacional e as limitações da abordagem.
 ---
 
 ## Referências

@@ -1,3 +1,21 @@
+# Deep learning
 ultralytics
+
+# Image processing
 Pillow
+scikit-image
+
+# Numerical computing
+numpy
+scipy
+
+# Machine learning
+scikit-learn
+
+# Data analysis and visualization
+pandas
+matplotlib
+joblib
+
+# Configuration
 PyYAML

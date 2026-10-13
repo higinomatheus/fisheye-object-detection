@@ -10,8 +10,7 @@ __pycache__/
 .vscode/
 
 # Datasets
-datasets/woodscape_raw/
-datasets/woodscape/
+datasets/
 
 # Treinamentos / resultados
 runs/
