@@ -1,121 +1,51 @@
 # Fisheye Object Detection
 
-Projeto de pesquisa para **detecção de objetos em imagens fisheye**, utilizando o dataset **WoodScape** e modelos de detecção em tempo real.
+Pesquisa em visão computacional para **detecção de objetos em imagens fisheye**, com ênfase na qualidade das detecções, no custo computacional e na viabilidade de execução em dispositivos de borda.
 
-Nesta etapa da pesquisa foram avaliadas duas arquiteturas:
+O projeto parte de dois detectores de objetos baseados em deep learning — **RT-DETR-L** e **YOLO11m** — avaliados sobre o **WoodScape**. Uma linha experimental complementar investiga **características HOG, redução dimensional com PCA e One-Class SVM**. Essa segunda linha ainda está em desenvolvimento e, inicialmente, trabalha com recortes de objetos anotados, não com detecção completa.
 
-* **RT-DETR-L**
-* **YOLO11m**
+## Estado da pesquisa
 
-O objetivo é construir um pipeline reprodutível para preparação dos dados, treinamento, validação, teste e comparação de modelos em imagens obtidas por câmeras fisheye, considerando tanto a qualidade da detecção quanto o custo computacional.
+| Frente | Situação |
+| --- | --- |
+| Preparação do WoodScape e divisão agrupada por captura | Concluída nos experimentos originais |
+| Treinamento RT-DETR-L e YOLO11m | Concluído |
+| Avaliação dos dois detectores no conjunto de teste | Concluída |
+| Extração de recortes da classe `person` | Teste exploratório concluído (50 recortes) |
+| HOG e PCA | Pendente |
+| One-Class SVM | Pendente |
+| Recuperação do manifesto da divisão original | Pendente |
 
----
+> **Reprodutibilidade:** os dois detectores foram avaliados usando a mesma divisão original de dados. Antes de executar uma nova avaliação comparativa, será necessário recuperar os identificadores exatos de `train`, `val` e `test` da máquina em que os baselines foram treinados. A mesma proporção ou semente, isoladamente, não garante a mesma composição dos conjuntos.
 
-## Objetivos
+## Dataset: WoodScape
 
-Este projeto busca:
+Fonte: [ValeoAI / WoodScape](https://github.com/valeoai/WoodScape). O conjunto utilizado contém **8.234 imagens** com anotações 2D de cinco classes:
 
-* preparar o dataset WoodScape para detecção de objetos;
-* converter as anotações originais para o formato utilizado pela Ultralytics;
-* manter divisões fixas de `train`, `val` e `test`;
-* treinar e avaliar diferentes arquiteturas de detecção;
-* comparar RT-DETR e YOLO utilizando os mesmos dados;
-* avaliar desempenho por classe;
-* analisar custo computacional e velocidade de inferência;
-* investigar posteriormente execução em dispositivos de borda.
+| ID | Classe |
+| ---: | --- |
+| 0 | `vehicles` |
+| 1 | `person` |
+| 2 | `bicycle` |
+| 3 | `traffic_light` |
+| 4 | `traffic_sign` |
 
-As principais métricas de interesse são:
+A divisão empregada nos baselines foi:
 
-* Precision;
-* Recall;
-* mAP@50;
-* mAP@50:95;
-* número de parâmetros;
-* GFLOPs;
-* uso de VRAM;
-* latência;
-* FPS;
-* tamanho do modelo.
+| Conjunto | Imagens | Objetos anotados |
+| --- | ---: | ---: |
+| Treinamento | 6.587 | 57.719 |
+| Validação | 823 | 7.118 |
+| Teste | 824 | 7.226 |
+| **Total** | **8.234** | **72.063** |
 
----
+As imagens são identificadas por captura e câmera (`FV`, `RV`, `MVL`, `MVR`). Na preparação dos dados para os baselines, imagens relacionadas à mesma captura foram agrupadas para reduzir vazamentos entre os conjuntos.
 
-## Dataset
+**Os dados do WoodScape e os recortes derivados não são distribuídos neste repositório.** Faça o download pelas fontes autorizadas e respeite as condições de uso.
 
-O projeto utiliza o [WoodScape](https://github.com/valeoai/WoodScape), dataset desenvolvido pela Valeo para tarefas de visão computacional com câmeras fisheye.
+### Formato das anotações
 
-Para a tarefa de detecção são utilizadas cinco classes:
-
-| ID | Classe          |
-| -: | --------------- |
-|  0 | `vehicles`      |
-|  1 | `person`        |
-|  2 | `bicycle`       |
-|  3 | `traffic_light` |
-|  4 | `traffic_sign`  |
-
-O dataset preparado neste projeto contém:
-
-| Split      |   Imagens |    Objetos |
-| ---------- | --------: | ---------: |
-| Train      |     6.587 |     57.719 |
-| Validation |       823 |      7.118 |
-| Test       |       824 |      7.226 |
-| **Total**  | **8.234** | **72.063** |
-
-> Os dados do WoodScape não são versionados neste repositório. Faça o download diretamente das fontes oficiais e respeite os termos de uso e a licença do dataset.
-
----
-
-## Estrutura do projeto
-
-```text
-fisheye-object-detection/
-├── datasets/
-│   ├── woodscape_raw/
-│   │   ├── rgb_images/
-│   │   └── box_2d_annotations/
-│   │
-│   └── woodscape/
-│       ├── images/
-│       │   ├── train/
-│       │   ├── val/
-│       │   └── test/
-│       ├── labels/
-│       │   ├── train/
-│       │   ├── val/
-│       │   └── test/
-│       └── woodscape.yaml
-│
-├── scripts/
-│   └── prepare_woodscape.py
-│
-├── classical_ml/
-│   └── extract_crops.py
-│
-├── training/
-│   ├── train_rtdetr.py
-│   └── train_yolo11.py
-│
-├── evaluation/
-│   └── evaluate_model.py
-│
-├── docs/
-│   ├── rtdetr_l_woodscape_e3_b8_full.tex
-│   └── rtdetr_l_woodscape_e100_b8_summary.tex
-│
-├── runs/
-├── requirements.txt
-├── .gitignore
-└── README.md
-```
-
-As pastas `datasets/`, `runs/` e os arquivos de pesos `.pt` não devem ser enviados para o GitHub.
-
----
-
-## Formato original das anotações
-
-As bounding boxes do WoodScape utilizadas neste projeto seguem o formato:
+Os arquivos originais de bounding boxes possuem registros no formato:
 
 ```text
 classe,class_id,xmin,ymin,xmax,ymax
@@ -125,471 +55,175 @@ Exemplo:
 
 ```text
 vehicles,0,11,387,250,570
-vehicles,0,1005,358,1243,522
 person,1,865,295,915,375
 ```
 
-O script de preparação converte essas coordenadas para o formato utilizado pela Ultralytics:
+O script de preparação converte as coordenadas para o formato YOLO (`class_id x_center y_center width height`, normalizado entre 0 e 1).
 
-```text
-class_id x_center y_center width height
-```
+## Instalação
 
-com todas as coordenadas normalizadas entre `0` e `1`.
-
----
-
-## Ambiente Python
-
-Crie um ambiente virtual:
+Recomenda-se criar um ambiente virtual Python:
 
 ```bash
 python3 -m venv .venv
-```
-
-Ative o ambiente:
-
-```bash
 source .venv/bin/activate
-```
-
-Atualize o `pip`:
-
-```bash
 python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-Instale as dependências:
+O arquivo `requirements.txt` reúne as dependências dos pipelines de deep learning e aprendizado de máquina clássico. As versões específicas utilizadas nos treinamentos originais estão registradas abaixo; para reprodução exata, também devem ser preservados os artefatos e o ambiente de treinamento.
 
-```bash
-pip install -r requirements.txt
-```
-
-Dependências principais:
+## Estrutura do repositório
 
 ```text
-ultralytics
-Pillow
-PyYAML
-numpy
-scipy
-scikit-learn
-scikit-image
-pandas
-matplotlib
-joblib
+fisheye-object-detection/
+├── classical_ml/
+│   └── extract_crops.py          # Recortes de objetos anotados (implementado)
+├── scripts/
+│   └── prepare_woodscape.py      # Conversão e preparação do WoodScape
+├── training/
+│   ├── train_rtdetr.py
+│   └── train_yolo11.py
+├── evaluation/
+│   └── evaluate_model.py
+├── docs/                          # Relatórios dos experimentos
+├── datasets/                      # Dados locais, não versionados
+├── runs/                          # Saídas locais, não versionadas
+├── requirements.txt
+└── README.md
 ```
 
----
+Arquivos de dataset, checkpoints, saídas de treinamento e recortes não devem ser commitados.
 
-## Preparação do WoodScape
+## Baselines de deep learning
 
-Coloque os dados originais em:
+### Preparação dos dados
+
+Organize os arquivos originais da seguinte forma:
 
 ```text
 datasets/woodscape_raw/
 ├── rgb_images/
 └── box_2d_annotations/
+    ├── 00000_FV.txt
+    └── ...
 ```
 
-Depois execute:
+O script aceita os argumentos `--raw`, `--output`, `--train`, `--val`, `--seed` e `--mode`:
 
 ```bash
-python3 scripts/prepare_woodscape.py \
-    --raw datasets/woodscape_raw \
-    --output datasets/woodscape
+python scripts/prepare_woodscape.py \
+  --raw datasets/woodscape_raw \
+  --output datasets/woodscape
 ```
 
-O script:
+**Atenção:** este comando pode produzir uma divisão diferente da utilizada nos experimentos publicados. Antes de reinterpretar resultados ou executar novas comparações, recupere e confira os arquivos originais de cada split.
 
-1. localiza imagens e anotações correspondentes;
-2. lê as bounding boxes originais;
-3. converte as coordenadas para o formato YOLO/Ultralytics;
-4. agrupa imagens relacionadas pela captura;
-5. divide os dados em `train`, `val` e `test`;
-6. cria a estrutura de diretórios;
-7. gera o arquivo `woodscape.yaml`.
+### Treinamento
 
-Resultado obtido:
+Os experimentos originais foram executados com **NVIDIA GeForce RTX 5070 (~12 GB VRAM)**, Python 3.14.4, PyTorch 2.14.0+cu130 e Ultralytics 8.4.147.
 
-```text
-Imagens encontradas: 8234
-Anotações encontradas: 8234
-Pares válidos: 8234
+| Parâmetro | RT-DETR-L | YOLO11m |
+| --- | --- | --- |
+| Pesos iniciais | `rtdetr-l.pt` | `yolo11m.pt` |
+| Épocas máximas | 100 | 100 |
+| Resolução de entrada | 640 | 640 |
+| Batch size | 8 | 8 |
+| Otimizador | AdamW | AdamW |
+| Learning rate | 0.001 | 0.001 |
+| Weight decay | 0.0005 | 0.0005 |
+| Warm-up | 3 épocas | 3 épocas |
+| Patience | 20 | 20 |
+| Seed | 42 | 42 |
+| AMP | Ativado | Ativado |
 
-train: 6587 imagens | 57719 objetos
-val:    823 imagens |  7118 objetos
-test:   824 imagens |  7226 objetos
-```
-
----
-
-## Estratégia de divisão
-
-As imagens possuem identificadores associados às diferentes câmeras:
-
-```text
-FV
-RV
-MVL
-MVR
-```
-
-Exemplos:
-
-```text
-04346_FV.png
-04346_RV.png
-04346_MVL.png
-04346_MVR.png
-```
-
-Durante a divisão do dataset, imagens associadas à mesma captura são agrupadas para reduzir o risco de vazamento de informação entre treinamento, validação e teste.
-
-A divisão foi mantida fixa durante os experimentos com RT-DETR-L e YOLO11m.
-
----
-
-## Hardware utilizado
-
-Os experimentos foram executados com:
-
-```text
-GPU: NVIDIA GeForce RTX 5070
-VRAM: ~12 GB
-PyTorch: 2.14.0+cu130
-CUDA PyTorch: 13.0
-Python: 3.14.4
-Ultralytics: 8.4.147
-```
-
----
-
-# Treinamento
-
-## RT-DETR-L
-
-O primeiro baseline completo utiliza o **RT-DETR-L**, carregado a partir dos pesos pré-treinados:
-
-```text
-rtdetr-l.pt
-```
-
-Execute:
+Execução:
 
 ```bash
-python3 training/train_rtdetr.py
+python training/train_rtdetr.py
+python training/train_yolo11.py
 ```
 
-Configuração principal:
+Ambos chegaram à época 91 e foram interrompidos por *early stopping*, com melhor checkpoint na época 71. No YOLO11m, houve uma interrupção por `CUDA_ERROR_LAUNCH_TIMEOUT` durante a época 27; o treinamento foi retomado a partir de `last.pt`.
 
-```text
-Epochs máximas: 100
-Image size:     640
-Batch:          8
-Optimizer:      AdamW
-Learning rate:  0.001
-Weight decay:   0.0005
-Warm-up:        3 épocas
-Patience:       20 épocas
-Device:         CUDA:0
-Workers:        8
-Seed:           42
-AMP:            True
-```
+### Avaliação dos baselines
 
-O treinamento foi interrompido por `early stopping` na época 91, sendo a época 71 selecionada como melhor checkpoint.
-
----
-
-## YOLO11m
-
-O segundo baseline utiliza o **YOLO11m**, carregado a partir dos pesos:
-
-```text
-yolo11m.pt
-```
-
-Execute:
+O script `evaluation/evaluate_model.py` utiliza `split="test"` para a avaliação final. Exemplos com os caminhos empregados nos experimentos originais:
 
 ```bash
-python3 training/train_yolo11.py
+python evaluation/evaluate_model.py \
+  --model-type rtdetr \
+  --weights runs/rtdetr/woodscape_test-2/weights/best.pt \
+  --name rtdetr_l_woodscape_test
+
+python evaluation/evaluate_model.py \
+  --model-type yolo \
+  --weights runs/yolo11/woodscape_yolo11m_e100_b8/weights/best.pt \
+  --name yolo11m_woodscape_test
 ```
 
-A configuração experimental foi mantida próxima à utilizada pelo RT-DETR-L:
+Os checkpoints não estão incluídos no GitHub; esses comandos exigem os arquivos locais de pesos e o dataset preparado.
 
-```text
-Epochs máximas: 100
-Image size:     640
-Batch:          8
-Optimizer:      AdamW
-Learning rate:  0.001
-Weight decay:   0.0005
-Warm-up:        3 épocas
-Patience:       20 épocas
-Device:         CUDA:0
-Workers:        8
-Seed:           42
-AMP:            True
-```
+## Resultados dos baselines
 
-Durante a época 27 ocorreu uma interrupção causada por `CUDA_ERROR_LAUNCH_TIMEOUT`.
+### Validação
 
-O treinamento foi retomado utilizando:
+| Métrica | RT-DETR-L | YOLO11m |
+| --- | ---: | ---: |
+| Precision | 0.655 | 0.672 |
+| Recall | 0.593 | 0.580 |
+| mAP@50 | 0.618 | 0.620 |
+| mAP@50:95 | 0.394 | 0.408 |
+| Inferência | 5.8 ms | 2.7 ms |
+| Parâmetros | 31.99 M | 20.03 M |
+| GFLOPs | 105.4 | 67.8 |
+| Tamanho do modelo | 66.2 MB | 40.5 MB |
 
-```bash
-yolo train resume \
-    model=runs/yolo11/woodscape_yolo11m_e100_b8/weights/last.pt
-```
+### Teste independente
 
-A execução prosseguiu normalmente até o `early stopping` na época 91. Assim como no RT-DETR-L, a melhor época foi a 71.
+Resultados dos melhores checkpoints nas **824 imagens de teste** (7.226 objetos anotados):
 
----
+| Métrica | RT-DETR-L | YOLO11m |
+| --- | ---: | ---: |
+| **Precision** | **0.6941** | 0.6800 |
+| **Recall** | **0.5876** | 0.5604 |
+| **mAP@50** | **0.6270** | 0.6163 |
+| **mAP@50:95** | **0.4012** | 0.3976 |
+| Inferência | 10.01 ms | **4.70 ms** |
+| Parâmetros | 31.99 M | **20.03 M** |
+| GFLOPs | 105.4 | **67.8** |
 
-# Avaliação
+O RT-DETR-L obteve métricas agregadas de detecção ligeiramente superiores no teste, enquanto o YOLO11m teve menor custo de inferência na medição registrada. As latências são específicas do ambiente e das condições de avaliação utilizadas.
 
-A avaliação final dos modelos é realizada pelo script:
+### mAP@50:95 por classe no teste
 
-```text
-evaluation/evaluate_model.py
-```
+| Classe | RT-DETR-L | YOLO11m |
+| --- | ---: | ---: |
+| `vehicles` | 0.598 | **0.612** |
+| `person` | 0.433 | **0.441** |
+| `bicycle` | **0.317** | 0.309 |
+| `traffic_light` | **0.301** | 0.288 |
+| `traffic_sign` | **0.358** | 0.338 |
 
-O script utiliza explicitamente:
+Resultados detalhados por classe e outras métricas estão documentados nos relatórios em `docs/`.
 
-```python
-split="test"
-```
+### Observações de qualidade dos dados
 
-para avaliar os checkpoints selecionados nas 824 imagens reservadas para teste.
+Durante o treinamento, a Ultralytics identificou e removeu uma anotação duplicada em `03404_RV.png` (treinamento) e outra em `01866_MVL.png` (validação). Uma melhoria prevista é tratar essas duplicações durante a preparação.
 
-## RT-DETR-L
+## E5 — Aprendizado de máquina clássico (em desenvolvimento)
 
-```bash
-python3 evaluation/evaluate_model.py \
-    --model-type rtdetr \
-    --weights runs/rtdetr/woodscape_test-2/weights/best.pt \
-    --name rtdetr_l_woodscape_test
-```
+O experimento E5 investiga se uma representação visual mais compacta pode contribuir para reconhecer objetos de interesse em imagens fisheye. A proposta inicial considera:
 
-## YOLO11m
+1. Extração de recortes a partir das bounding boxes originais do WoodScape;
+2. Descritores HOG (*Histogram of Oriented Gradients*);
+3. Padronização das características (`StandardScaler`);
+4. Redução dimensional com PCA (*Principal Component Analysis*);
+5. Modelagem da classe `person` com One-Class SVM.
 
-```bash
-python3 evaluation/evaluate_model.py \
-    --model-type yolo \
-    --weights runs/yolo11/woodscape_yolo11m_e100_b8/weights/best.pt \
-    --name yolo11m_woodscape_test
-```
+### E5.1 — Extração de recortes (concluída em amostra exploratória)
 
----
-
-# Resultados experimentais
-
-## Validação
-
-| Métrica    | RT-DETR-L |     YOLO11m |
-| ---------- | --------: | ----------: |
-| Precision  |     0.655 |   **0.672** |
-| Recall     | **0.593** |       0.580 |
-| mAP@50     |     0.618 |   **0.620** |
-| mAP@50:95  |     0.394 |   **0.408** |
-| Inferência |    5.8 ms |  **2.7 ms** |
-| Parâmetros |   31.99 M | **20.03 M** |
-| GFLOPs     |     105.4 |    **67.8** |
-| Modelo     |   66.2 MB | **40.5 MB** |
-
-Na validação, o YOLO11m apresentou mAP ligeiramente superior e menor custo computacional.
-
----
-
-## Teste
-
-Os dois melhores checkpoints foram posteriormente avaliados no mesmo conjunto de teste, contendo:
-
-```text
-824 imagens
-7.226 instâncias
-```
-
-Resultados:
-
-| Métrica    |  RT-DETR-L |     YOLO11m |
-| ---------- | ---------: | ----------: |
-| Precision  | **0.6941** |      0.6800 |
-| Recall     | **0.5876** |      0.5604 |
-| mAP@50     | **0.6270** |      0.6163 |
-| mAP@50:95  | **0.4012** |      0.3976 |
-| Inferência |   10.01 ms | **4.70 ms** |
-| Parâmetros |    31.99 M | **20.03 M** |
-| GFLOPs     |      105.4 |    **67.8** |
-
-O RT-DETR-L apresentou desempenho global ligeiramente superior no conjunto de teste.
-
-O YOLO11m, entretanto, apresentou desempenho muito próximo com custo computacional consideravelmente menor.
-
----
-
-## Resultados por classe no conjunto de teste
-
-### RT-DETR-L
-
-| Classe        | Precision | Recall | mAP@50 | mAP@50:95 |
-| ------------- | --------: | -----: | -----: | --------: |
-| vehicles      |     0.776 |  0.737 |  0.796 |     0.598 |
-| person        |     0.755 |  0.623 |  0.704 |     0.433 |
-| bicycle       |     0.649 |  0.466 |  0.504 |     0.317 |
-| traffic_light |     0.663 |  0.572 |  0.574 |     0.301 |
-| traffic_sign  |     0.627 |  0.539 |  0.556 |     0.358 |
-
-### YOLO11m
-
-| Classe        | Precision | Recall | mAP@50 | mAP@50:95 |
-| ------------- | --------: | -----: | -----: | --------: |
-| vehicles      |     0.773 |  0.744 |  0.804 |     0.612 |
-| person        |     0.782 |  0.634 |  0.710 |     0.441 |
-| bicycle       |     0.608 |  0.442 |  0.504 |     0.309 |
-| traffic_light |     0.612 |  0.453 |  0.522 |     0.288 |
-| traffic_sign  |     0.625 |  0.529 |  0.542 |     0.338 |
-
-O YOLO11m apresentou desempenho superior nas classes `vehicles` e `person` em mAP@50:95, enquanto o RT-DETR-L apresentou melhores resultados para `bicycle`, `traffic_light` e `traffic_sign`.
-
----
-
-## Eficiência computacional
-
-A comparação mostra uma diferença relevante entre as arquiteturas:
-
-```text
-RT-DETR-L
-31.99 milhões de parâmetros
-105.4 GFLOPs
-~10.0 ms de inferência no teste
-
-YOLO11m
-20.03 milhões de parâmetros
-67.8 GFLOPs
-~4.7 ms de inferência no teste
-```
-
-O YOLO11m utiliza aproximadamente 37% menos parâmetros e apresenta custo computacional significativamente menor, mantendo desempenho de detecção próximo ao RT-DETR-L.
-
-Esses resultados tornam a família YOLO particularmente interessante para os próximos experimentos relacionados a execução em dispositivos de borda.
-
----
-
-## Artefatos gerados
-
-Os treinamentos e avaliações geram, entre outros:
-
-```text
-weights/best.pt
-weights/last.pt
-results.png
-labels.jpg
-confusion_matrix.png
-confusion_matrix_normalized.png
-PR_curve.png
-P_curve.png
-R_curve.png
-F1_curve.png
-```
-
-Os arquivos `.pt` e o diretório `runs/` são ignorados pelo Git.
-
----
-
-## Observações sobre as anotações
-
-Durante o treinamento, a Ultralytics identificou duas labels duplicadas:
-
-```text
-train/.../03404_RV.png: 1 duplicate labels removed
-val/.../01866_MVL.png: 1 duplicate labels removed
-```
-
-A biblioteca removeu automaticamente essas duplicações durante o carregamento.
-
-Como melhoria futura, o script de preparação poderá ser ajustado para eliminar labels duplicadas antes do treinamento.
-
----
-
-## Próximas etapas
-
-* [x] preparar o dataset WoodScape;
-* [x] definir divisão fixa de `train`, `val` e `test`;
-* [x] realizar smoke test com RT-DETR-L;
-* [x] realizar treinamento completo do RT-DETR-L;
-* [x] realizar treinamento completo do YOLO11m;
-* [x] implementar avaliação padronizada;
-* [x] avaliar RT-DETR-L no conjunto de teste;
-* [x] avaliar YOLO11m no conjunto de teste;
-* [x] comparar RT-DETR-L e YOLO11m;
-* [ ] corrigir labels duplicadas durante a preparação;
-* [ ] analisar curvas Precision-Recall, F1 e matrizes de confusão;
-* [ ] analisar falsos positivos e falsos negativos;
-* [ ] avaliar desempenho em objetos pequenos;
-* [ ] treinar YOLO11s como alternativa mais leve;
-* [ ] realizar experimentos com data augmentation;
-* [ ] estudar diferentes resoluções de entrada;
-* [ ] medir FPS em condições controladas;
-* [ ] estudar exportação ONNX/TensorRT;
-* [ ] avaliar execução em hardware de borda.
-
-### Aprendizado de máquina clássico
-
-- [x] Implementar extração de recortes a partir das anotações do WoodScape.
-- [x] Validar visualmente uma amostra de 50 recortes da classe `person`.
-- [ ] Executar extração de características HOG.
-- [ ] Analisar redução dimensional com PCA.
-- [ ] Recuperar o particionamento original dos baselines.
-- [ ] Implementar One-Class SVM.
-- [ ] Avaliar o classificador em dados independentes.
-- [ ] Analisar custo computacional dos métodos clássicos.
----
-
-## Documentação
-
-Os relatórios dos experimentos seguem o padrão:
-
-```text
-<modelo>_<dataset>_e<epochs>_b<batch>_<tipo>.tex
-```
-
-Exemplos:
-
-```text
-rtdetr_l_woodscape_e100_b8_full.tex
-rtdetr_l_woodscape_e100_b8_summary.tex
-yolo11m_woodscape_e100_b8_full.tex
-```
-
-Um relatório comparativo consolidado entre os modelos será produzido após a análise completa dos resultados.
-
----
-## Experimentos com aprendizado de máquina clássico
-
-Além dos modelos de deep learning RT-DETR-L e YOLO11m, o projeto investiga técnicas clássicas de aprendizado de máquina, com o objetivo de avaliar sua viabilidade, capacidade de representação e custo computacional em imagens fisheye.
-
-A investigação considera extração de características visuais, redução de dimensionalidade e aprendizado de uma única classe (*one-class learning*).
-
-### Experimento E5 — HOG, PCA e One-Class SVM
-
-O experimento E5 tem como objetivo investigar a representação de objetos de interesse utilizando características visuais extraídas de imagens fisheye.
-
-A metodologia proposta envolve:
-
-1. Extração de recortes a partir das bounding boxes originais do WoodScape.
-2. Extração de características utilizando Histogram of Oriented Gradients (HOG).
-3. Padronização das características com StandardScaler.
-4. Redução de dimensionalidade utilizando Principal Component Analysis (PCA).
-5. Treinamento e avaliação de One-Class SVM.
-
-Inicialmente, a classe `person` foi selecionada como objeto de interesse.
-
-#### E5.1 — Extração de recortes
-
-O script `classical_ml/extract_crops.py` utiliza as imagens RGB e as anotações 2D originais do WoodScape para gerar recortes individuais dos objetos anotados.
-
-Exemplo de execução:
+O script `classical_ml/extract_crops.py` gera recortes e um manifesto CSV com nome do recorte, imagem e captura originais, classe e coordenadas da bounding box.
 
 ```bash
 python classical_ml/extract_crops.py \
@@ -599,76 +233,45 @@ python classical_ml/extract_crops.py \
   --max-crops 50
 ```
 
-**Resultado preliminar — 13/10/2026:**
+**Resultado observado em 13/10/2026:** 50 recortes da classe `person`, nenhuma anotação inválida, nenhum arquivo de anotação sem imagem correspondente e inspeção visual satisfatória dos recortes. O manifesto foi criado em `datasets/woodscape_crops_test/person_manifest.csv`.
 
-| Indicador | Resultado |
-|---|---:|
-| Classe | `person` |
-| Recortes gerados | 50 |
-| Anotações inválidas | 0 |
-| Anotações sem imagem correspondente | 0 |
-| Verificação visual | Concluída com sucesso |
+Este é um **teste funcional exploratório**, não uma avaliação de desempenho do classificador. Os 50 recortes ainda não foram separados por `train`, `val` e `test`.
 
-O script também gera um manifesto CSV contendo os identificadores das imagens e das capturas originais, as classes e as coordenadas das bounding boxes.
+### E5.2 — HOG + PCA (planejado)
 
-Os recortes e arquivos de dados gerados não são versionados no repositório.
+Será implementada a extração de descritores HOG dos recortes, seguida de padronização e PCA para avaliar dimensionalidade e variância explicada. **Ainda não há implementação versionada nem resultados publicados para esta etapa.**
 
-#### E5.2 — Extração HOG e redução dimensional com PCA
+### E5.3 — One-Class SVM (planejado)
 
-A próxima etapa consiste na extração de características HOG e na investigação da variância explicada pelas componentes principais obtidas via PCA.
+O classificador será ajustado sobre características da classe `person`. Outras classes poderão ser utilizadas como exemplos de comparação na avaliação, mantendo os dados de teste fora do ajuste do modelo e do pré-processamento.
 
-A implementação inicial utiliza:
+### Limitações e protocolo futuro
 
-`classical_ml/hog_pca.py`
+- A entrada inicial do E5 são **recortes previamente localizados pelas anotações**, e não imagens completas. Portanto, E5 ainda não é um detector end-to-end.
+- A comparação direta de mAP e de tempo total de detecção com YOLO11m e RT-DETR-L **não é válida nesta fase**: o E5 não inclui a etapa de localização dos objetos.
+- Antes de calcular métricas finais, será necessário recuperar os splits originais, prevenir vazamento entre capturas e ajustar `StandardScaler`, PCA e One-Class SVM apenas com dados de treinamento.
+- Variância explicada pelo PCA não equivale a desempenho de classificação. O desempenho será analisado em dados independentes e com métricas adequadas à tarefa proposta.
 
-Exemplo de execução:
+## Próximos passos
 
-```bash
-python classical_ml/hog_pca.py \
-  --crops datasets/woodscape_crops_test \
-  --class-name person \
-  --components 10
-```
-
-**Status:** implementação e avaliação pendentes.
-
-#### E5.3 — One-Class SVM
-
-O classificador One-Class SVM será treinado para modelar características da classe `person`, utilizando exemplos de outras classes na avaliação.
-
-**Status:** implementação e avaliação pendentes.
-
-### Considerações metodológicas
-
-Os testes iniciais utilizam uma amostra exploratória sem particionamento definitivo.
-
-Antes da avaliação experimental, será necessário recuperar a divisão original de treinamento, validação e teste utilizada nos baselines de deep learning.
-
-O ajuste dos transformadores e modelos será realizado exclusivamente com os dados de treinamento.
-
-Os experimentos clássicos inicialmente trabalham com recortes de objetos previamente localizados. Portanto, não representam um sistema completo de detecção e não serão comparados diretamente com os detectores YOLO11m e RT-DETR-L em termos de mAP ou latência de detecção.
-
-O objetivo inicial é investigar a capacidade de representação e classificação, o custo computacional e as limitações da abordagem.
----
+- [x] Preparar o WoodScape e executar os baselines RT-DETR-L e YOLO11m.
+- [x] Avaliar ambos os detectores no conjunto independente de teste.
+- [x] Extrair e inspecionar visualmente uma amostra de 50 recortes `person`.
+- [ ] Recuperar e registrar os identificadores da divisão original dos baselines.
+- [ ] Implementar e testar HOG + PCA.
+- [ ] Implementar e avaliar One-Class SVM com protocolo independente.
+- [ ] Examinar falsos positivos, falsos negativos e objetos pequenos nos baselines.
+- [ ] Medir custo de CPU, memória e tempo dos métodos clássicos.
+- [ ] Estudar validação cruzada agrupada, aumento de dados e modelos menores.
+- [ ] Investigar exportação e desempenho em dispositivos de borda.
 
 ## Referências
 
-* WoodScape:
-  https://github.com/valeoai/WoodScape
-
-* Ultralytics RT-DETR:
-  https://docs.ultralytics.com/models/rtdetr/
-
-* Ultralytics YOLO11:
-  https://docs.ultralytics.com/models/yolo11/
-
-* RT-DETR — *DETRs Beat YOLOs on Real-time Object Detection*:
-  https://arxiv.org/abs/2304.08069
-
----
+- [WoodScape — ValeoAI](https://github.com/valeoai/WoodScape)
+- [Ultralytics RT-DETR](https://docs.ultralytics.com/models/rtdetr/)
+- [Ultralytics YOLO11](https://docs.ultralytics.com/models/yolo11/)
+- [RT-DETR: DETRs Beat YOLOs on Real-time Object Detection](https://arxiv.org/abs/2304.08069)
 
 ## Autor
 
-**Matheus Higino**
-
-Projeto desenvolvido no contexto de pesquisa em visão computacional, detecção de objetos em imagens fisheye e processamento em ambientes de borda.
+Matheus Higino — projeto de pesquisa em visão computacional, detecção de objetos com câmeras fisheye e avaliação de custo computacional.
