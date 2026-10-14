@@ -29,3 +29,5 @@ weights/
 # Sistema
 .DS_Store
 Thumbs.db
+# Videos
+videos/
