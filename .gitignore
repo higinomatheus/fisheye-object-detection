@@ -31,3 +31,4 @@ weights/
 Thumbs.db
 # Videos
 videos/
+.Rhistory
